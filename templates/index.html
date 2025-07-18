@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mentora Chatbot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="chat-box">
+    <h2>💬 Mentora Mental Wellness Chatbot</h2>
+    <div class="messages" id="chat"></div>
+    <div class="input-container">
+      <input type="text" id="message" placeholder="Type your message..." onkeypress="handleKeyPress(event)">
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    function handleKeyPress(event) {
+      if (event.key === 'Enter') {
+        sendMessage();
+      }
+    }
+
+    async function sendMessage() {
+      const msgInput = document.getElementById("message");
+      const msg = msgInput.value.trim();
+      if (!msg) return;
+
+      const chat = document.getElementById("chat");
+
+      // Add user message
+      chat.innerHTML += `
+        <div class="msg-row user-row">
+          <div class="msg user">
+            <b>You</b>
+            <div class="bubble">${msg}</div>
+          </div>
+        </div>`;
+      msgInput.value = "";
+
+      // Add bot typing bubble
+      chat.innerHTML += `
+        <div class="msg-row bot-row">
+          <div class="msg bot">
+            <b>Mentora</b>
+            <div class="bubble loading">
+              <div class="typing">
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+              </div>
+            </div>
+          </div>
+        </div>`;
+
+      chat.scrollTop = chat.scrollHeight;
+
+      try {
+        const res = await fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: msg })
+        });
+
+        if (!res.ok) throw new Error('Network response was not ok');
+        const data = await res.json();
+
+        // Replace typing bubble with response
+        const botBubble = document.querySelector(".bubble.loading");
+        if (botBubble) {
+          botBubble.classList.remove("loading");
+          botBubble.innerHTML = data.reply;
+        }
+
+      } catch (error) {
+        console.error('Error:', error);
+        const botBubble = document.querySelector(".bubble.loading");
+        if (botBubble) {
+          botBubble.classList.remove("loading");
+          botBubble.innerHTML = "Sorry, I'm having trouble responding. Please try again later.";
+        }
+      }
+
+      chat.scrollTop = chat.scrollHeight;
+    }
+  </script>
+</body>
+</html>
